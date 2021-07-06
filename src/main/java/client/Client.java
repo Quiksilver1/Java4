@@ -1,11 +1,18 @@
 package client;
 
+import server.ClientHandler;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Swing client - File Storage
@@ -36,9 +43,11 @@ public class Client extends JFrame {
                 sendFile(cmd[1]);
             } else if ("download".equals(cmd[0])) {
                 getFile(cmd[1]);
+            }else{
+                sendMessage(cmd[0]);
             }
-
         });
+
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -58,12 +67,45 @@ public class Client extends JFrame {
     }
 
     private void getFile(String filename) {
-        // TODO: 13.05.2021 downloading
+        try {
+            File file = new File("C:\\Program Files\\Java\\Java4\\src\\main\\java\\server\\" + filename);
+
+            File downloadFile = new File("C:\\Program Files\\Java\\Java4\\src\\main\\java\\client\\" + filename);
+            if (!downloadFile.exists()) {
+                downloadFile.createNewFile();
+            }
+
+            if (!file.exists()) {
+                throw new FileNotFoundException();
+            }
+
+            long fileLength = file.length();
+            FileInputStream fis = new FileInputStream(file);
+
+            out.writeUTF("download");
+            out.writeUTF(filename);
+            out.writeLong(fileLength);
+
+            int read = 0;
+            byte[] buffer = new byte[8 * 1024];
+            while ((read = fis.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+
+            out.flush();
+
+            String status = in.readUTF();
+            System.out.println("Sending status: " + status);
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found - /client/" + filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void sendFile(String filename) {
         try {
-            File file = new File("client/" + filename);
+            File file = new File("C:\\Program Files\\Java\\Java4\\src\\main\\java\\client\\" + filename);
             if (!file.exists()) {
                 throw new FileNotFoundException();
             }
@@ -113,6 +155,6 @@ public class Client extends JFrame {
     }
 
     public static void main(String[] args) throws IOException {
-        new Client();
+        new client.Client();
     }
 }
